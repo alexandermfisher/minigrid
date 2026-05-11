@@ -1,46 +1,113 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://alexandermfisher.github.io/minigrid/)
 
 <p align="center">
-    <a href = "https://minigrid.farama.org/" target = "_blank" > <img src="https://raw.githubusercontent.com/Farama-Foundation/Minigrid/master/minigrid-text.png" width="500px"/> </a>
+    <img src="https://raw.githubusercontent.com/Farama-Foundation/Minigrid/master/minigrid-text.png" width="500px"/>
 </p>
 
 <p align="center">
   <img src="figures/door-key-curriculum.gif" width=200 alt="Figure Door Key Curriculum">
 </p>
 
-The Minigrid library contains a collection of discrete grid-world environments to conduct research on Reinforcement Learning. The environments follow the [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) standard API and they are designed to be lightweight, fast, and easily customizable.
+A fork of [Farama-Foundation/Minigrid](https://github.com/Farama-Foundation/Minigrid) with extended documentation aimed at making the library more accessible to ML practitioners.
 
-The documentation website is at [minigrid.farama.org](https://minigrid.farama.org/), and we have a public discord server (which we also use to coordinate development work) that you can join here: [https://discord.gg/bnJ6kubTg6](https://discord.gg/bnJ6kubTg6)
+The Minigrid library contains a collection of discrete grid-world environments for Reinforcement Learning research. Environments follow the [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) API and are designed to be lightweight, fast, and easily customisable.
 
-Note that the library was previously known as gym-minigrid and it has been referenced in several publications. If your publication uses the Minigrid library and you wish for it to be included in the [list of publications](https://minigrid.farama.org/content/publications/), please create an issue in the [GitHub repository](https://github.com/Farama-Foundation/Minigrid/issues/new/choose).
+**Documentation: [alexandermfisher.github.io/minigrid](https://alexandermfisher.github.io/minigrid/)**
 
-See the [Project Roadmap](https://github.com/Farama-Foundation/Minigrid/issues/363) for details regarding the long-term plans.
+---
 
-# Installation
+## Installation
 
-To install the Minigrid library use `pip install minigrid`.
+```bash
+pip install minigrid
+```
 
-We support Python 3.7, 3.8, 3.9, 3.10 and 3.11 on Linux and macOS. We will accept PRs related to Windows, but do not officially support it.
+For development (includes test and WFC dependencies):
 
-# Environments
-The included environments can be divided in two groups. The original `Minigrid` environments and the `BabyAI` environments.
+```bash
+pip install -e ".[wfc,testing]"
+```
 
-## Minigrid
-The list of the environments that were included in the original `Minigrid` library can be found in the [documentation](https://minigrid.farama.org/environments/minigrid/). These environments have in common a triangle-like agent with a discrete action space that has to navigate a 2D map with different obstacles (Walls, Lava, Dynamic obstacles) depending on the environment. The task to be accomplished is described by a `mission` string returned by the observation of the agent. These mission tasks include different goal-oriented and hierarchical missions such as picking up boxes, opening doors with keys or navigating a maze to reach a goal location. Each environment provides one or more configurations registered with Gymansium. Each environment is also programmatically tunable in terms of size/complexity, which is useful for curriculum learning or to fine-tune difficulty.
+Requires Python ≥ 3.8.
 
-## BabyAI
-These environments have been imported from the [BabyAI](https://github.com/mila-iqia/babyai) project library and the list of environments can also be found in the [documentation](https://minigrid.farama.org/environments/babyai/). The purpose of this collection of environments is to perform research on grounded language learning. The environments are derived from the `Minigrid` grid-world environments and include an additional functionality that generates synthetic
-natural-looking instructions (e.g. “put the red ball next to the box on your left”) that command the the agent to navigate the world (including unlocking doors) and move objects to specified locations in order to accomplish the task.
+---
 
-# Training an Agent
-The [rl-starter-files](https://github.com/lcswillems/torch-rl) is a repository with examples on how to train `Minigrid` environments with RL algorithms. This code has been tested and is known to work with this environment. The default hyper-parameters are also known to converge.
+## Documentation
 
-# Citation
+The docs are built with [Sphinx](https://www.sphinx-doc.org/) and hosted on GitHub Pages. The following pages have been added on top of the upstream docs:
 
-The original `gym-minigrid` environments were created as part of work done at [Mila](https://mila.quebec). The Dynamic obstacles environment were added as part of work done at [IAS in TU Darmstadt](https://www.ias.informatik.tu-darmstadt.de/) and the University of Genoa for mobile robot navigation with dynamic obstacles.
+| Page | What it covers |
+|---|---|
+| [Architecture](https://alexandermfisher.github.io/minigrid/content/architecture/) | Class hierarchy, grid coordinate system, observation encoding (7×7×3 integer format), reward formula, FOV mechanics, multi-room layout |
+| [API Reference](https://alexandermfisher.github.io/minigrid/api/reference/) | Every public class and method — `MiniGridEnv`, `Grid`, all `WorldObj` subclasses, `RoomGrid`, `Actions`, `Constants`, and all 13 wrappers — with parameter tables |
+| [Cookbook](https://alexandermfisher.github.io/minigrid/content/cookbook/) | 11 ready-to-run recipes: decoding observations, pixel CNN observations, full observability, exploration bonuses, lava-safe training, reproducible seeds, SB3 training, custom environments |
 
-To cite this project please use:
+The upstream docs (installation, environment catalogue, custom environment tutorial, training with StableBaselines3) are also included.
+
+### Build locally
+
+```bash
+# First time only
+python3 -m venv .venv-docs
+source .venv-docs/bin/activate
+pip install -r docs/requirements.txt
+pip install -e .[wfc]
+
+# Build
+sphinx-build -b dirhtml docs _build
+
+# Serve with working links
+python3 -m http.server 8000 --directory _build
+# then open http://localhost:8000
+```
+
+For live reload while editing:
+
+```bash
+pip install sphinx-autobuild
+sphinx-autobuild docs _build --port 8000
+```
+
+---
+
+## GitHub Actions — docs deployment
+
+`.github/workflows/deploy-docs.yml` runs on every push to `master` and on manual trigger (`workflow_dispatch`).
+
+**What it does:**
+
+1. Checks out the repo and sets up Python 3.12
+2. Installs `docs/requirements.txt` and the package itself (`pip install -e .[wfc]`)
+3. Runs `docs/_scripts/gen_env_docs.py` and `gen_envs_display.py` to auto-generate environment pages from docstrings
+4. Builds the HTML with `sphinx-build -b dirhtml docs _build`
+5. Fixes the 404 page path for GitHub Pages
+6. Pushes `_build/` to the `gh-pages` branch using [JamesIves/github-pages-deploy-action](https://github.com/JamesIves/github-pages-deploy-action)
+
+GitHub Pages is configured to serve from the `gh-pages` branch root, making the site available at `https://alexandermfisher.github.io/minigrid/`.
+
+To trigger a manual redeploy: **Actions → Deploy documentation → Run workflow**.
+
+---
+
+## Environments
+
+### Minigrid
+
+A triangle-shaped agent navigates a 2D grid with walls, lava, keys, doors, and boxes. Tasks are described by a `mission` string in the observation. Each environment has multiple registered difficulty variants and is tunable in size/complexity — useful for curriculum learning.
+
+Full environment list: [alexandermfisher.github.io/minigrid/environments/minigrid](https://alexandermfisher.github.io/minigrid/environments/minigrid/)
+
+### BabyAI
+
+Imported from [BabyAI](https://github.com/mila-iqia/babyai). Extends Minigrid with synthetic natural-language instructions (e.g. "put the red ball next to the box on your left") for grounded language learning research.
+
+Full environment list: [alexandermfisher.github.io/minigrid/environments/babyai](https://alexandermfisher.github.io/minigrid/environments/babyai/)
+
+---
+
+## Citation
 
 ```bibtex
 @inproceedings{MinigridMiniworld23,
@@ -52,7 +119,7 @@ To cite this project please use:
 }
 ```
 
-If using the `BabyAI` environments please also cite the following:
+If using the BabyAI environments:
 
 ```bibtex
 @article{chevalier2018babyai,
