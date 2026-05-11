@@ -92,7 +92,12 @@ html_css_files = []
 # Pre-render Mermaid diagrams to SVG at build time using mmdc.
 # This removes the CDN dependency and guarantees diagrams render everywhere.
 mermaid_output_format = "svg"
-mermaid_params = ["--theme", "dark"]
+mermaid_params = [
+    "--theme",
+    "dark",
+    "--puppeteerConfigFile",
+    "docs/puppeteer-config.json",
+]
 
 
 # `viewcode` skips data-only modules in the module index, so add constants manually.
