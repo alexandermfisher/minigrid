@@ -6,11 +6,11 @@ This page explains the core abstractions and data flow in MiniGrid so you can us
 
 ```{mermaid}
 graph TD
-    GYM["gymnasium.Env"]
-    MGE["MiniGridEnv\nminigrid/minigrid_env.py"]
-    RG["RoomGrid\nminigrid/core/roomgrid.py"]
-    SR["Single-room envs\nminigrid/envs/*.py"]
-    MR["Multi-room envs\nminigrid/envs/*.py\nminigrid/envs/babyai/*.py"]
+    GYM[gymnasium.Env]
+    MGE[MiniGridEnv\nminigrid/minigrid_env.py]
+    RG[RoomGrid\nminigrid/core/roomgrid.py]
+    SR[Single-room envs\nminigrid/envs/]
+    MR[Multi-room envs\nminigrid/envs/ and envs/babyai/]
 
     GYM --> MGE
     MGE --> SR
@@ -24,23 +24,23 @@ graph TD
 
 ```{mermaid}
 flowchart TD
-    R["env.reset()"]
-    GG["_gen_grid(width, height)\nsubclass places walls, objects, agent\nsets self.mission"]
-    OB["gen_obs()\nbuilds image · direction · mission dict"]
-    ST["env.step(action)"]
-    EX["execute action\nturn / move / pickup / drop / toggle"]
-    CH{check outcome}
-    GO["terminated = True\nreward = 1 − 0.9×(steps/max_steps)"]
-    LV["terminated = True\nreward = 0"]
-    TR["truncated = True\nreward = 0"]
-    NX["return next obs"]
+    R[env.reset]
+    GG[_gen_grid width height\nplace walls objects agent\nset self.mission]
+    OB[gen_obs\nbuild image direction mission]
+    ST[env.step action]
+    EX[execute action\nturn move pickup drop toggle]
+    CH{outcome}
+    GO[terminated = True\nreward = 1 minus 0.9 x steps/max]
+    LV[terminated = True\nreward = 0]
+    TR[truncated = True\nreward = 0]
+    NX[return next obs]
 
     R --> GG --> OB
     OB --> ST --> EX --> CH
-    CH -->|"goal reached"| GO
-    CH -->|"lava stepped on"| LV
-    CH -->|"step_count == max_steps"| TR
-    CH -->|"otherwise"| NX
+    CH -->|goal reached| GO
+    CH -->|lava stepped on| LV
+    CH -->|step count == max_steps| TR
+    CH -->|otherwise| NX
     NX --> ST
 ```
 
@@ -51,32 +51,43 @@ flowchart TD
 ```{mermaid}
 classDiagram
     class WorldObj {
-        +type: str
-        +color: str
-        +contains: WorldObj
+        +type str
+        +color str
+        +contains WorldObj
         +can_overlap() bool
         +can_pickup() bool
         +see_behind() bool
         +toggle(env, pos) bool
         +encode() tuple
     }
-    class Wall { see_behind() False }
-    class Floor { can_overlap() True }
+    class Wall {
+        +see_behind() bool
+    }
+    class Floor {
+        +can_overlap() bool
+    }
     class Door {
-        +is_open: bool
-        +is_locked: bool
-        can_overlap() if open
-        see_behind() if open
-        toggle() open·close·unlock
+        +is_open bool
+        +is_locked bool
+        +toggle(env, pos) bool
     }
-    class Key { can_pickup() True }
-    class Ball { can_pickup() True }
+    class Key {
+        +can_pickup() bool
+    }
+    class Ball {
+        +can_pickup() bool
+    }
     class Box {
-        can_pickup() True
-        toggle() reveal contents
+        +contains WorldObj
+        +can_pickup() bool
+        +toggle(env, pos) bool
     }
-    class Goal { can_overlap() True }
-    class Lava { can_overlap() True }
+    class Goal {
+        +can_overlap() bool
+    }
+    class Lava {
+        +can_overlap() bool
+    }
 
     WorldObj <|-- Wall
     WorldObj <|-- Floor
@@ -107,14 +118,14 @@ Door state encodes as: `0=open`, `1=closed`, `2=locked`.
 
 ```{mermaid}
 graph LR
-    OBS["obs dict"]
-    IMG["image\nuint8 · shape 7×7×3"]
-    DIR["direction\nint 0–3"]
-    MISSION["mission\nstr"]
-    CELL["each cell\n[object_idx, color_idx, state]"]
-    OBJ["OBJECT_TO_IDX\nwall=2  door=4  key=5\nball=6  goal=8  lava=9 …"]
-    COL["COLOR_TO_IDX\nred=0  green=1  blue=2\npurple=3  yellow=4  grey=5"]
-    STA["state\n0=open  1=closed  2=locked"]
+    OBS[obs dict]
+    IMG[image\nuint8 shape 7x7x3]
+    DIR[direction\nint 0 to 3]
+    MISSION[mission\nstr]
+    CELL[each cell\nobject_idx color_idx state]
+    OBJ[OBJECT_TO_IDX\nwall=2 door=4 key=5\nball=6 goal=8 lava=9]
+    COL[COLOR_TO_IDX\nred=0 green=1 blue=2\npurple=3 yellow=4 grey=5]
+    STA[state\n0=open 1=closed 2=locked]
 
     OBS --> IMG
     OBS --> DIR
@@ -144,20 +155,13 @@ The agent sees a 7×7 region (default) rotated so "forward" is always at the bot
 
 ```{mermaid}
 graph TD
-    subgraph "Full grid (top-down)"
-        G1["· · · · · · ·"]
-        G2["· · W W W · ·"]
-        G3["· · W · · · ·"]
-        G4["· · D · · · ·"]
-        G5["· · · · A · ·"]
-        G6["· · · · · · ·"]
-    end
-    subgraph "Agent observation (7×7 egocentric)"
-        V1["unseen | unseen | unseen"]
-        V2["unseen |  wall  | unseen"]
-        V3["  ·    |  door  |   ·  "]
-        V4["  ·    |   ·    |   ·  "]
-        V5["  ·    | agent  |   ·  "]
+    subgraph VIEW [Agent observation - 7x7 egocentric]
+        direction LR
+        U1[unseen] --- U2[unseen] --- U3[unseen]
+        W1[unseen] --- W2[wall] --- W3[unseen]
+        C1[floor] --- D1[door] --- C2[floor]
+        F1[floor] --- F2[floor] --- F3[floor]
+        A1[floor] --- A2[agent facing up] --- A3[floor]
     end
 ```
 
@@ -165,7 +169,7 @@ Change view size:
 
 ```python
 from minigrid.wrappers import ViewSizeWrapper
-env = ViewSizeWrapper(env, agent_view_size=11)  # must be odd ≥ 3
+env = ViewSizeWrapper(env, agent_view_size=11)  # must be odd >= 3
 ```
 
 Use `FullyObsWrapper` to remove FOV entirely and expose the whole grid.
@@ -174,12 +178,12 @@ Use `FullyObsWrapper` to remove FOV entirely and expose the whole grid.
 
 ```{mermaid}
 graph TD
-    subgraph "3×2 RoomGrid  (num_cols=3, num_rows=2)"
-        R00["Room 0,0"] -->|door| R10["Room 1,0"]
-        R10 -->|door| R20["Room 2,0"]
-        R00 -->|door| R01["Room 0,1"]
-        R10 -->|door| R11["Room 1,1"]
-        R20 -->|door| R21["Room 2,1"]
+    subgraph GRID [3x2 RoomGrid]
+        R00[Room 0,0] -->|door| R10[Room 1,0]
+        R10 -->|door| R20[Room 2,0]
+        R00 -->|door| R01[Room 0,1]
+        R10 -->|door| R11[Room 1,1]
+        R20 -->|door| R21[Room 2,1]
         R01 -->|door| R11
         R11 -->|door| R21
     end
