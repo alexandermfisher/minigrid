@@ -24,4 +24,5 @@ _build/
 # Virtual environments
 .env
 .venv
+.venv-docs
 venv
