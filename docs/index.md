@@ -55,6 +55,7 @@ To cite this project please use:
 :hidden:
 :caption: Introduction
 
+content/installation
 content/basic_usage
 content/publications
 content/create_env_tutorial
