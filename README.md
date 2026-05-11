@@ -48,26 +48,18 @@ The upstream docs (installation, environment catalogue, custom environment tutor
 
 ### Build locally
 
-```bash
-# First time only
-python3 -m venv .venv-docs
-source .venv-docs/bin/activate
-pip install -r docs/requirements.txt
-pip install -e .[wfc]
+| Command | What it does |
+|---|---|
+| `make docs-setup` | One-time setup — creates `.venv-docs` and installs all dependencies |
+| `make docs` | Build the docs into `_build/` |
+| `make docs-serve` | Build then serve at `http://localhost:8000` |
+| `make docs-live` | Live reload — rebuilds automatically on every file save |
 
-# Build
-sphinx-build -b dirhtml docs _build
-
-# Serve with working links
-python3 -m http.server 8000 --directory _build
-# then open http://localhost:8000
-```
-
-For live reload while editing:
+First time on a new machine:
 
 ```bash
-pip install sphinx-autobuild
-sphinx-autobuild docs _build --port 8000
+make docs-setup
+make docs-serve
 ```
 
 ---
