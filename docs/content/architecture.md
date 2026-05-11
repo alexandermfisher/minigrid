@@ -110,7 +110,7 @@ graph LR
     OBS["obs dict"]
     IMG["image\nuint8 · shape 7×7×3"]
     DIR["direction\nint 0–3"]
-    MIS["mission\nstr"]
+    MISSION["mission\nstr"]
     CELL["each cell\n[object_idx, color_idx, state]"]
     OBJ["OBJECT_TO_IDX\nwall=2  door=4  key=5\nball=6  goal=8  lava=9 …"]
     COL["COLOR_TO_IDX\nred=0  green=1  blue=2\npurple=3  yellow=4  grey=5"]
@@ -118,7 +118,7 @@ graph LR
 
     OBS --> IMG
     OBS --> DIR
-    OBS --> MIS
+    OBS --> MISSION
     IMG --> CELL
     CELL --> OBJ
     CELL --> COL
