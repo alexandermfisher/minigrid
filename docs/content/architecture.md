@@ -7,10 +7,10 @@ This page explains the core abstractions and data flow in MiniGrid so you can us
 ```{mermaid}
 graph TD
     GYM[gymnasium.Env]
-    MGE[MiniGridEnv\nminigrid/minigrid_env.py]
-    RG[RoomGrid\nminigrid/core/roomgrid.py]
-    SR[Single-room envs\nminigrid/envs/]
-    MR[Multi-room envs\nminigrid/envs/ and envs/babyai/]
+    MGE["MiniGridEnv<br/>minigrid/minigrid_env.py"]
+    RG["RoomGrid<br/>minigrid/core/roomgrid.py"]
+    SR["Single-room envs<br/>minigrid/envs/"]
+    MR["Multi-room envs<br/>minigrid/envs/ and envs/babyai/"]
 
     GYM --> MGE
     MGE --> SR
@@ -25,14 +25,14 @@ graph TD
 ```{mermaid}
 flowchart TD
     R[env.reset]
-    GG[_gen_grid width height\nplace walls objects agent\nset self.mission]
-    OB[gen_obs\nbuild image direction mission]
-    ST[env.step action]
-    EX[execute action\nturn move pickup drop toggle]
+    GG["_gen_grid(width, height)<br/>place walls, objects, agent<br/>set self.mission"]
+    OB["gen_obs()<br/>build image, direction, mission"]
+    ST["env.step(action)"]
+    EX["execute action<br/>turn / move / pickup / drop / toggle"]
     CH{outcome}
-    GO[terminated = True\nreward = 1 minus 0.9 x steps/max]
-    LV[terminated = True\nreward = 0]
-    TR[truncated = True\nreward = 0]
+    GO["terminated = True<br/>reward = 1 - 0.9 x steps/max"]
+    LV["terminated = True<br/>reward = 0"]
+    TR["truncated = True<br/>reward = 0"]
     NX[return next obs]
 
     R --> GG --> OB
@@ -119,13 +119,13 @@ Door state encodes as: `0=open`, `1=closed`, `2=locked`.
 ```{mermaid}
 graph LR
     OBS[obs dict]
-    IMG[image\nuint8 shape 7x7x3]
-    DIR[direction\nint 0 to 3]
-    MISSION[mission\nstr]
-    CELL[each cell\nobject_idx color_idx state]
-    OBJ[OBJECT_TO_IDX\nwall=2 door=4 key=5\nball=6 goal=8 lava=9]
-    COL[COLOR_TO_IDX\nred=0 green=1 blue=2\npurple=3 yellow=4 grey=5]
-    STA[state\n0=open 1=closed 2=locked]
+    IMG["image<br/>uint8 shape 7x7x3"]
+    DIR["direction<br/>int 0 to 3"]
+    MISSION["mission<br/>str"]
+    CELL["each cell<br/>object_idx, color_idx, state"]
+    OBJ["OBJECT_TO_IDX<br/>wall=2  door=4  key=5<br/>ball=6  goal=8  lava=9"]
+    COL["COLOR_TO_IDX<br/>red=0  green=1  blue=2<br/>purple=3  yellow=4  grey=5"]
+    STA["state<br/>0=open  1=closed  2=locked"]
 
     OBS --> IMG
     OBS --> DIR
