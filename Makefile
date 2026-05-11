@@ -26,7 +26,6 @@ docs-setup:
 	$(VENV)/bin/pip install -r $(SOURCEDIR)/requirements.txt
 	$(VENV)/bin/pip install -e ".[wfc]"
 	$(VENV)/bin/pip install sphinx-autobuild
-	npm install -g @mermaid-js/mermaid-cli
 
 $(SPHINXBUILD):
 	@echo "Venv not found. Run: make docs-setup"
