@@ -43,7 +43,6 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
     "myst_parser",
-    "sphinx_github_changelog",
     "sphinxcontrib.mermaid",
 ]
 
@@ -90,9 +89,6 @@ html_theme_options = {
 html_static_path = ["_static"]
 html_css_files = []
 
-# -- Generate Changelog -------------------------------------------------
-
-sphinx_github_changelog_token = os.environ.get("SPHINX_GITHUB_CHANGELOG_TOKEN")
 
 
 # `viewcode` skips data-only modules in the module index, so add constants manually.
