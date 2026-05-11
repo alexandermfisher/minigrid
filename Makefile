@@ -8,6 +8,8 @@ BUILDDIR    = _build
 
 # Build the docs
 docs: $(SPHINXBUILD)
+	$(VENV)/bin/python docs/_scripts/gen_env_docs.py
+	$(VENV)/bin/python docs/_scripts/gen_envs_display.py
 	$(SPHINXBUILD) -b dirhtml $(SOURCEDIR) $(BUILDDIR)
 
 # Build then serve at http://localhost:8000
