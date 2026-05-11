@@ -154,15 +154,15 @@ env = RGBImgObsWrapper(env)          # full grid, pixel image
 The agent sees a 7×7 region (default) rotated so "forward" is always at the bottom. Walls and closed/locked doors block sight — cells behind them are encoded as "unseen".
 
 ```{mermaid}
-graph TD
-    subgraph VIEW [Agent observation - 7x7 egocentric]
-        direction LR
-        U1[unseen] --- U2[unseen] --- U3[unseen]
-        W1[unseen] --- W2[wall] --- W3[unseen]
-        C1[floor] --- D1[door] --- C2[floor]
-        F1[floor] --- F2[floor] --- F3[floor]
-        A1[floor] --- A2[agent facing up] --- A3[floor]
-    end
+flowchart LR
+    GRID["Full grid<br/>all cells"]
+    FOV["Agent FOV<br/>7x7 egocentric window<br/>rotated so forward = bottom"]
+    VISIBLE["Visible cells<br/>encoded as object_idx, color_idx, state"]
+    HIDDEN["Blocked cells<br/>walls and closed doors<br/>encoded as object_idx=0 unseen"]
+
+    GRID --> FOV
+    FOV --> VISIBLE
+    FOV --> HIDDEN
 ```
 
 Change view size:
