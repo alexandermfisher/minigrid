@@ -89,6 +89,10 @@ html_theme_options = {
 html_static_path = ["_static"]
 html_css_files = []
 
+# Pre-render Mermaid diagrams to SVG at build time using mmdc.
+# This removes the CDN dependency and guarantees diagrams render everywhere.
+mermaid_output_format = "svg"
+
 
 
 # `viewcode` skips data-only modules in the module index, so add constants manually.
