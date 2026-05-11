@@ -1,6 +1,7 @@
 sphinx
 sphinx-notfound-page
 myst-parser
+sphinxcontrib-mermaid
 git+https://github.com/Farama-Foundation/Celshast#egg=furo
 moviepy
 pygame

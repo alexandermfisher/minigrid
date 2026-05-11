@@ -4,94 +4,132 @@ This page explains the core abstractions and data flow in MiniGrid so you can us
 
 ## Class hierarchy
 
-```
-gymnasium.Env
-└── MiniGridEnv                  (minigrid/minigrid_env.py)
-      ├── <single-room envs>     (minigrid/envs/*.py)
-      └── RoomGrid               (minigrid/core/roomgrid.py)
-            └── <multi-room envs>
+```{mermaid}
+graph TD
+    GYM["gymnasium.Env"]
+    MGE["MiniGridEnv\nminigrid/minigrid_env.py"]
+    RG["RoomGrid\nminigrid/core/roomgrid.py"]
+    SR["Single-room envs\nminigrid/envs/*.py"]
+    MR["Multi-room envs\nminigrid/envs/*.py\nminigrid/envs/babyai/*.py"]
+
+    GYM --> MGE
+    MGE --> SR
+    MGE --> RG
+    RG --> MR
 ```
 
 `MiniGridEnv` owns the episode loop, rendering, and observation generation. `RoomGrid` extends it with a structured room-and-door layout. Concrete environments (e.g. `DoorKeyEnv`, `EmptyEnv`) subclass one of these two and only need to implement `_gen_grid()`.
 
 ## Episode lifecycle
 
-```
-env.reset()
-  └── _gen_grid(width, height)   ← subclass fills in the grid and sets self.mission
-      place_agent(...)
-      → returns observation dict
+```{mermaid}
+flowchart TD
+    R["env.reset()"]
+    GG["_gen_grid(width, height)\nsubclass places walls, objects, agent\nsets self.mission"]
+    OB["gen_obs()\nbuilds image · direction · mission dict"]
+    ST["env.step(action)"]
+    EX["execute action\nturn / move / pickup / drop / toggle"]
+    CH{check outcome}
+    GO["terminated = True\nreward = 1 − 0.9×(steps/max_steps)"]
+    LV["terminated = True\nreward = 0"]
+    TR["truncated = True\nreward = 0"]
+    NX["return next obs"]
 
-env.step(action)
-  └── executes action (move, turn, pickup, toggle, …)
-      checks termination (goal reached / lava / max_steps)
-      → returns (obs, reward, terminated, truncated, info)
+    R --> GG --> OB
+    OB --> ST --> EX --> CH
+    CH -->|"goal reached"| GO
+    CH -->|"lava stepped on"| LV
+    CH -->|"step_count == max_steps"| TR
+    CH -->|"otherwise"| NX
+    NX --> ST
 ```
 
 `_gen_grid` is the only method a subclass must implement. Everything else — observation building, rendering, FOV masking — is handled by the base class.
 
-## The grid
-
-`Grid` (`minigrid/core/grid.py`) is a flat list of `WorldObj | None`, indexed as `grid[x + y*width]`. Access it via `grid.get(x, y)` and `grid.set(x, y, obj)`.
-
-Coordinate origin is the **top-left corner**. X increases rightward, Y increases downward.
-
-```
-(0,0) → x →
-  ↓
-  y
-```
-
-The outermost cells are conventionally walls, so the usable interior is `[1, width-2] × [1, height-2]`.
-
 ## World objects
 
-Every cell holds a `WorldObj` subclass or `None` (empty floor). Each object encodes to a 3-integer tuple `(object_idx, color_idx, state)`.
+```{mermaid}
+classDiagram
+    class WorldObj {
+        +type: str
+        +color: str
+        +contains: WorldObj
+        +can_overlap() bool
+        +can_pickup() bool
+        +see_behind() bool
+        +toggle(env, pos) bool
+        +encode() tuple
+    }
+    class Wall { see_behind() False }
+    class Floor { can_overlap() True }
+    class Door {
+        +is_open: bool
+        +is_locked: bool
+        can_overlap() if open
+        see_behind() if open
+        toggle() open·close·unlock
+    }
+    class Key { can_pickup() True }
+    class Ball { can_pickup() True }
+    class Box {
+        can_pickup() True
+        toggle() reveal contents
+    }
+    class Goal { can_overlap() True }
+    class Lava { can_overlap() True }
 
-| Class  | Can walk through | Can pick up | Blocks sight | Notes |
+    WorldObj <|-- Wall
+    WorldObj <|-- Floor
+    WorldObj <|-- Door
+    WorldObj <|-- Key
+    WorldObj <|-- Ball
+    WorldObj <|-- Box
+    WorldObj <|-- Goal
+    WorldObj <|-- Lava
+```
+
+Each cell in the grid holds one `WorldObj` subclass or `None` (empty). Objects encode to a 3-integer tuple `(object_idx, color_idx, state)` used in the observation image.
+
+| Class  | Walk through | Pick up | Blocks sight | Notes |
 |--------|:---:|:---:|:---:|---|
 | `Wall` | ✗ | ✗ | ✓ | Only object that blocks vision |
 | `Floor` | ✓ | ✗ | ✗ | Decorative walkable tile |
-| `Door` | depends | ✗ | depends | Open=walkable+transparent; locked=needs matching Key |
-| `Key`  | ✗ | ✓ | ✗ | Matches Door by color |
+| `Door` | if open | ✗ | if closed | Locked requires matching `Key` by color |
+| `Key`  | ✗ | ✓ | ✗ | Matches `Door` by color |
 | `Ball` | ✗ | ✓ | ✗ | |
-| `Box`  | ✗ | ✓ | ✗ | Can contain another object; toggle opens it |
-| `Goal` | ✓ | ✗ | ✗ | Reaching it ends the episode with positive reward |
-| `Lava` | ✓ | ✗ | ✗ | Touching it ends the episode with 0 reward |
+| `Box`  | ✗ | ✓ | ✗ | Toggle opens it; can contain another object |
+| `Goal` | ✓ | ✗ | ✗ | Stepping on it ends episode with reward |
+| `Lava` | ✓ | ✗ | ✗ | Stepping on it ends episode with reward 0 |
 
 Door state encodes as: `0=open`, `1=closed`, `2=locked`.
 
 ## Observation format
 
-The default observation is a Python dict with three keys:
+```{mermaid}
+graph LR
+    OBS["obs dict"]
+    IMG["image\nuint8 · shape 7×7×3"]
+    DIR["direction\nint 0–3"]
+    MIS["mission\nstr"]
+    CELL["each cell\n[object_idx, color_idx, state]"]
+    OBJ["OBJECT_TO_IDX\nwall=2  door=4  key=5\nball=6  goal=8  lava=9 …"]
+    COL["COLOR_TO_IDX\nred=0  green=1  blue=2\npurple=3  yellow=4  grey=5"]
+    STA["state\n0=open  1=closed  2=locked"]
 
-| Key | Type | Description |
-|---|---|---|
-| `"image"` | `uint8 (7, 7, 3)` | Egocentric partial view, encoded |
-| `"direction"` | `int` | Agent direction: 0=right 1=down 2=left 3=up |
-| `"mission"` | `str` | Natural-language task description |
-
-### Image encoding
-
-Each cell in the 7×7 image is `[object_idx, color_idx, state]` — **not** raw RGB pixels. The integers index into `OBJECT_TO_IDX`, `COLOR_TO_IDX`, and `STATE_TO_IDX` from `minigrid.core.constants`.
-
-```python
-from minigrid.core.constants import OBJECT_TO_IDX, COLOR_TO_IDX, IDX_TO_OBJECT, IDX_TO_COLOR
-
-obs, _ = env.reset()
-cell = obs["image"][3, 6]          # (object_idx, color_idx, state)
-obj_name  = IDX_TO_OBJECT[cell[0]] # e.g. "goal"
-color_name = IDX_TO_COLOR[cell[1]] # e.g. "green"
-state      = cell[2]               # 0=open/default, 1=closed, 2=locked
+    OBS --> IMG
+    OBS --> DIR
+    OBS --> MIS
+    IMG --> CELL
+    CELL --> OBJ
+    CELL --> COL
+    CELL --> STA
 ```
 
-The view is oriented so `image[3, 6]` is always the cell directly in front of the agent (row 3, bottom row 6).
+The image is **not** pixel values — it is a 7×7 grid of integer-encoded cells. Decode with `IDX_TO_OBJECT` and `IDX_TO_COLOR` from `minigrid.core.constants`.
 
-Cells outside the grid or behind walls are encoded as `object_idx=0` ("unseen").
+The view is egocentric: `image[3, 6]` is always the cell directly in front of the agent. Cells behind walls or outside the grid are encoded as `object_idx=0` ("unseen").
 
 ### Getting a pixel image instead
-
-Wrap the environment to get standard RGB images:
 
 ```python
 from minigrid.wrappers import RGBImgPartialObsWrapper, RGBImgObsWrapper
@@ -102,50 +140,52 @@ env = RGBImgObsWrapper(env)          # full grid, pixel image
 
 ## Agent field of view
 
-The agent sees a 7×7 grid (default) in front of it, rotated so "forward" is always at the bottom. Vision is blocked by walls and closed/locked doors. Objects behind these are encoded as "unseen".
+The agent sees a 7×7 region (default) rotated so "forward" is always at the bottom. Walls and closed/locked doors block sight — cells behind them are encoded as "unseen".
 
-Change the view size:
+```{mermaid}
+graph TD
+    subgraph "Full grid (top-down)"
+        G1["· · · · · · ·"]
+        G2["· · W W W · ·"]
+        G3["· · W · · · ·"]
+        G4["· · D · · · ·"]
+        G5["· · · · A · ·"]
+        G6["· · · · · · ·"]
+    end
+    subgraph "Agent observation (7×7 egocentric)"
+        V1["unseen | unseen | unseen"]
+        V2["unseen |  wall  | unseen"]
+        V3["  ·    |  door  |   ·  "]
+        V4["  ·    |   ·    |   ·  "]
+        V5["  ·    | agent  |   ·  "]
+    end
+```
+
+Change view size:
 
 ```python
-env = gym.make("MiniGrid-Empty-16x16-v0", agent_view_size=11)
-# or use the wrapper:
 from minigrid.wrappers import ViewSizeWrapper
-env = ViewSizeWrapper(env, agent_view_size=11)
+env = ViewSizeWrapper(env, agent_view_size=11)  # must be odd ≥ 3
 ```
 
 Use `FullyObsWrapper` to remove FOV entirely and expose the whole grid.
 
-## Reward signal
+## Multi-room layout (RoomGrid)
 
-The default reward for reaching the goal is:
-
+```{mermaid}
+graph TD
+    subgraph "3×2 RoomGrid  (num_cols=3, num_rows=2)"
+        R00["Room 0,0"] -->|door| R10["Room 1,0"]
+        R10 -->|door| R20["Room 2,0"]
+        R00 -->|door| R01["Room 0,1"]
+        R10 -->|door| R11["Room 1,1"]
+        R20 -->|door| R21["Room 2,1"]
+        R01 -->|door| R11
+        R11 -->|door| R21
+    end
 ```
-reward = 1 - 0.9 * (step_count / max_steps)
-```
 
-This is sparse (only on success) and shaped by efficiency — solving faster gives higher reward. Death by lava or exceeding `max_steps` yields reward 0.
-
-## Agent state
-
-| Attribute | Type | Description |
-|---|---|---|
-| `env.agent_pos` | `(int, int)` | Current grid position |
-| `env.agent_dir` | `int` | 0=right 1=down 2=left 3=up |
-| `env.carrying`  | `WorldObj \| None` | Object the agent holds |
-| `env.step_count` | `int` | Steps taken this episode |
-| `env.mission`   | `str` | Current mission string |
-
-## Multi-room environments (RoomGrid)
-
-`RoomGrid` divides the grid into a `num_cols × num_rows` array of equal-sized rooms. Rooms share walls; doors are cut through shared walls.
-
-Each `Room` object tracks:
-- Its position and size
-- Up to 4 neighbours (right, down, left, up)
-- Doors and their positions
-- Objects placed inside
-
-Use `connect_all()` to guarantee every room is reachable from any other. Use `add_object`, `add_door`, `remove_wall`, and `add_distractors` to populate rooms programmatically.
+`RoomGrid` subdivides the grid into a `num_cols × num_rows` array of equal rooms. Each `Room` tracks its position, up to 4 neighbours, its doors, and the objects inside it. Use `connect_all()` to guarantee every room is reachable.
 
 ## Directory map
 

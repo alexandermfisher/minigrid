@@ -44,6 +44,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "myst_parser",
     "sphinx_github_changelog",
+    "sphinxcontrib.mermaid",
 ]
 
 source_suffix = {
