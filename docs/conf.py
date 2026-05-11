@@ -72,7 +72,7 @@ napoleon_custom_sections = [("Returns", "params_style")]
 #
 html_theme = "furo"
 html_title = "MiniGrid Documentation"
-html_baseurl = "https://minigrid.farama.org/"
+html_baseurl = "https://alexandermfisher.github.io/minigrid/"
 html_copy_source = False
 html_favicon = "_static/img/minigrid-favicon.png"
 html_theme_options = {
@@ -80,9 +80,8 @@ html_theme_options = {
     "dark_logo": "img/minigrid-white.svg",
     "image": "img/minigrid-github.png",
     "description": "Minigrid contains simple and easily configurable grid world environments to conduct Reinforcement Learning research. This library was previously known as gym-minigrid.",
-    "gtag": "G-FBXJQQLXKD",
-    "versioning": True,
-    "source_repository": "https://github.com/Farama-Foundation/Minigrid/",
+    "versioning": False,
+    "source_repository": "https://github.com/alexandermfisher/minigrid/",
     "source_branch": "master",
     "source_directory": "docs/",
 }

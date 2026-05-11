@@ -1,0 +1,44 @@
+name: Deploy documentation
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r docs/requirements.txt
+          pip install -e .[wfc]
+
+      - name: Generate environment docs
+        run: |
+          python docs/_scripts/gen_env_docs.py
+          python docs/_scripts/gen_envs_display.py
+
+      - name: Build
+        run: sphinx-build -b dirhtml -v docs _build
+
+      - name: Fix 404 page
+        run: |
+          mv _build/404/index.html _build/404.html
+          python docs/_scripts/move_404.py _build/404.html
+          rm -r _build/.doctrees
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: _build
+          clean: true

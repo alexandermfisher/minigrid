@@ -63,8 +63,17 @@ content/training
 
 ```{toctree}
 :hidden:
-:caption: Wrappers
+:caption: Concepts
 
+content/architecture
+content/cookbook
+```
+
+```{toctree}
+:hidden:
+:caption: API Reference
+
+api/reference
 api/wrapper
 ```
 
