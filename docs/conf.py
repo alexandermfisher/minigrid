@@ -95,7 +95,6 @@ mermaid_output_format = "svg"
 mermaid_params = ["--theme", "dark"]
 
 
-
 # `viewcode` skips data-only modules in the module index, so add constants manually.
 def _add_constants_to_modules_index(app, pagename, templatename, context, doctree):
     """Inject `minigrid.core.constants` into the viewcode modules index."""
