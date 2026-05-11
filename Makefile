@@ -3,6 +3,7 @@ SPHINXBUILD = $(VENV)/bin/sphinx-build
 AUTOBUILD   = $(VENV)/bin/sphinx-autobuild
 SOURCEDIR   = docs
 BUILDDIR    = _build
+export SPHINX_GITHUB_CHANGELOG_TOKEN ?=
 
 .PHONY: docs docs-serve docs-live docs-setup
 
